@@ -2,7 +2,7 @@
 
 ## Adding system calls to linux kernel
 1: Download source code for linux kernel. I have used v6.6 for this project.\
-2: Add a file name "mysyscalls.c" in kernel directory.\
+2: Add a file name "mysyscalls.c" in kernel directory i.e. linux_src/kernel/mysyscalls.c\
 3: Define system calls and their handling in the file.\
 4: Add entry for the system calls in system table at the following location.\
     ```./arch/x86/entry/syscalls/syscall_64.tbl```\

@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -34,7 +35,8 @@ int main() {
     char message[RX_MSG_SIZE] = {0};
     const char *init_message = "sheryar";
     const char *ack_message = "ack";
-    pid_t child_pid;
+    pid_t pid;
+    int status;
 
     // Initialize the queue
     long queue_id = init_queue();
@@ -53,31 +55,26 @@ int main() {
 
     printf("Message sent: %s\n", init_message);
 
-    // Fork a child process to run the second application
-    child_pid = fork();
-    if (child_pid < 0) {
+    // Fork a child process to handle receiving and acknowledging the message
+    pid = fork();
+    if (pid < 0) {
         perror("fork failed");
         return EXIT_FAILURE;
     }
 
-    if (child_pid == 0) {
-        // In the child process, run the second application
-        execl("./server 0", "server", NULL);
+    if (pid == 0) { // Child process
+        char queue_id_str[20];
+        snprintf(queue_id_str, sizeof(queue_id_str), "%ld", queue_id);
+        execl("./server2", "server", queue_id_str, NULL);
         perror("execl failed");
         exit(EXIT_FAILURE);
-    } else {
-        // In the parent process, wait for the child to finish
-        waitpid(child_pid, NULL, 0);
+    } else { // Parent process
+        printf("Waiting for acknowledgment...\n");
 
-        // Receive acknowledgment from the second program
-        if (recv_msg(queue_id, message, RX_MSG_SIZE) < 0) {
-            perror("recv_msg failed");
-            return EXIT_FAILURE;
-        }
+        // Wait for the child process to finish
+        waitpid(pid, &status, 0);
 
-        printf("Received acknowledgment: %s\n", message);
-
-        if (strcmp(message, ack_message) == 0) {
+        if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS) {
             // Destroy the queue if acknowledgment is received
             if (destroy_queue(queue_id) < 0) {
                 perror("destroy_queue failed");
@@ -86,7 +83,7 @@ int main() {
 
             printf("Queue destroyed\n");
         } else {
-            printf("No acknowledgment received, queue not destroyed\n");
+            printf("Child process failed\n");
         }
     }
 

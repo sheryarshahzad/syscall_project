@@ -93,11 +93,14 @@ SYSCALL_DEFINE3(send_msg, int, q_id, const char __user *, msg, size_t, msglen) {
     kernel_msg[msglen] = '\0'; // Null-terminate string
 
     strncpy(queue_ptr->msg[queue_ptr->tail], kernel_msg, msglen);
-    queue_ptr->msg[queue_ptr->tail][msglen] = '\0';
+    queue_ptr->msg[queue_ptr->tail][msglen] = '\0'; // Ensure null-termination
+
     queue_ptr->tail = (queue_ptr->tail + 1) % MAX_MSG;
     queue_ptr->count++;
 
     kfree(kernel_msg);
+
+    // Wake up any processes waiting on the queue
     wake_up_interruptible(&queue_ptr->wait);
 
 out:
@@ -146,6 +149,7 @@ out:
 
 SYSCALL_DEFINE1(destroy_queue, int, q_id) {
     struct msg_queue *queue_ptr;
+    printk("destroying queue with id: %d\n", q_id);
 
     if (q_id < 0 || q_id >= MAX_QUEUE)
         return -1;
@@ -154,11 +158,7 @@ SYSCALL_DEFINE1(destroy_queue, int, q_id) {
     
     spin_lock(&queue_ptr->lock);
 
-    if (queue_ptr->count > 0) {
-        spin_unlock(&queue_ptr->lock);
-        return -4; // queue not empty, elements are there
-    }
-
+    printk("queue is destroyed\n");
     queue_ptr->count = -1; // means destroyed
     spin_unlock(&queue_ptr->lock);
     return 0;

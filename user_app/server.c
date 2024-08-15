@@ -1,3 +1,4 @@
+// recv_and_acknowledge.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -19,24 +20,24 @@ long send_msg(int q_id, const char *msg, size_t msglen) {
 }
 
 int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "Usage: %s <queue_id>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    int queue_id = atoi(argv[1]);
     char message[RX_MSG_SIZE];
     const char *ack_message = "ack";
-    int queue_id;
-    
-    if (argc == 2)
-    	queue_id = atoi(argv[0]);
-    else
-    	queue_id = 0;
 
-   // Receive a message
+    // Receive the message from the specified queue
     if (recv_msg(queue_id, message, RX_MSG_SIZE) < 0) {
         perror("recv_msg failed");
         return EXIT_FAILURE;
     }
 
-    printf("Message received: %s\n", message);
+    printf("Received message: %s\n", message);
 
-    // Send acknowledgment
+    // Send acknowledgment back to the queue
     if (send_msg(queue_id, ack_message, strlen(ack_message)) < 0) {
         perror("send_msg failed");
         return EXIT_FAILURE;
