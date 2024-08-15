@@ -1,8 +1,9 @@
 #include "linux/kernel.h"
 #include "linux/syscalls.h"
 #include "linux/string.h"
-/*#include "linux/types.h"*/
 #include <linux/uaccess.h> // For copy_from_user()
+#include <linux/slab.h> // For kmalloc and kfree
+#include <linux/spinlock.h> // For spinlocks
 
 
 // Below is test sys call
@@ -15,6 +16,7 @@ SYSCALL_DEFINE1(newcall, int, id)
 }
 
 
+// Define the maximum number of messages, queues, and message sizes
 #define MAX_MSG      10
 #define MAX_QUEUE    2
 #define MAX_MSG_SZ   256
@@ -25,29 +27,30 @@ struct msg_queue {
 	int head;
 	int tail;
 	int count;
-	//Add locks.
+	spinlock_t lock;
 };
 
-struct msg_queue queue[MAX_QUEUE];
+static struct msg_queue queue[MAX_QUEUE];
 
 SYSCALL_DEFINE0(init_queue)
 {
-	printk("init queue is called\n");
 	int i;
+	printk("init queue is called\n");
+
 	for (i = 0; i < MAX_QUEUE; i++) {
 		if (queue[i].count == 0) {
 			queue[i].head = 0;
 			queue[i].tail = 0;
 			queue[i].count = 0;
+			spin_lock_init(&queue[i].lock);
 			printk("id : %d\n", i);
 			return i;
-			}
+		}
 	}
 	return -1; //no space available
 }
 
 SYSCALL_DEFINE3(send_msg, int, q_id, const char __user *, msg, size_t, msglen)
-//asmlinkage long __x64_sys_send_msg(int q_id, char *msg, size_t msglen)
 {
 	char *kernel_msg;
 	int ret = 0;
@@ -58,109 +61,107 @@ SYSCALL_DEFINE3(send_msg, int, q_id, const char __user *, msg, size_t, msglen)
 		return -EINVAL;
 	}
 
-	printk("reading struct\n");
-
 	struct msg_queue *queue_ptr = &queue[q_id];
+	spin_lock(&queue_ptr->lock); // Acquire the lock
 
-    	if (queue_ptr->count >= MAX_MSG) {
-        	printk(KERN_WARNING "queue is full\n");
-        	return -ENOSPC;
-    	}
+	if (queue_ptr->count >= MAX_MSG) {
+		spin_unlock(&queue_ptr->lock); // Release the lock
+		printk(KERN_WARNING "queue is full\n");
+		return -ENOSPC;
+	}
 
-    	// Allocate memory for kernel buffer
-    	kernel_msg = kmalloc(msglen, GFP_KERNEL);
-    	if (!kernel_msg) {
-        	printk(KERN_ERR "Failed to allocate memory\n");
-        	return -ENOMEM;
-    	}
+	kernel_msg = kmalloc(msglen, GFP_KERNEL);
+	if (!kernel_msg) {
+		spin_unlock(&queue_ptr->lock); // Release the lock
+		printk(KERN_ERR "Failed to allocate memory\n");
+		return -ENOMEM;
+	}
 
-	// Copy message from user space to kernel space
-    	if (copy_from_user(kernel_msg, msg, msglen)) {
-        	printk(KERN_WARNING "Failed to copy data from user space\n");
-        	kfree(kernel_msg);
-        	return -EFAULT;
-    	}
+    if (copy_from_user(kernel_msg, msg, msglen)) {
+        kfree(kernel_msg);
+        spin_unlock(&queue_ptr->lock); // Release the lock
+        printk(KERN_WARNING "Failed to copy data from user space\n");
+        return -EFAULT;
+    }
 
-    	// Ensure null-termination of the message
-    	if (msglen >= MAX_MSG_SZ) {
-        	printk(KERN_WARNING "Message length exceeds maximum size\n");
-        	kfree(kernel_msg);
-        	return -EINVAL;
-    	}
-    	kernel_msg[msglen] = '\0';  // Null-terminate string
+    if (msglen >= MAX_MSG_SZ) {
+        kfree(kernel_msg);
+        spin_unlock(&queue_ptr->lock); // Release the lock
+        printk(KERN_WARNING "Message length exceeds maximum size\n");
+        return -EINVAL;
+    }
+    kernel_msg[msglen] = '\0'; // Null-terminate string
 
-    	printk(KERN_INFO "msg len: %lu\n", msglen);
-	printk(KERN_INFO "Message: %s\n", kernel_msg);
+    strncpy(queue_ptr->msg[queue_ptr->tail], kernel_msg, msglen);
+    queue_ptr->msg[queue_ptr->tail][msglen] = '\0'; // Ensure null-termination
+    queue_ptr->tail = (queue_ptr->tail + 1) % MAX_MSG;
+    queue_ptr->count++;
 
-    	// Copy message to queue
-    	strncpy(queue_ptr->msg[queue_ptr->tail], kernel_msg, msglen);
-    	queue_ptr->msg[queue_ptr->tail][msglen] = '\0';  // Ensure null-termination
+    kfree(kernel_msg);
+    spin_unlock(&queue_ptr->lock); // Release the lock
 
-    	// Update queue state
-    	queue_ptr->tail = (queue_ptr->tail + 1) % MAX_MSG;
-    	queue_ptr->count++;
-
-    	// Clean up
-    	kfree(kernel_msg);
-
-    	return ret;
+    return ret;
 }
-
 
 SYSCALL_DEFINE3(recv_msg, int, q_id, char __user *, rx_msg, size_t, msglen)
 {
-    	char kernel_msg[RX_MSG_SIZE];
-    	int ret = 0;
+    char kernel_msg[RX_MSG_SIZE];
+    int ret = 0;
 
-    	printk(KERN_INFO "recv msg is called\n");
-    	if (q_id < 0 || q_id >= MAX_QUEUE) {
-        	printk(KERN_WARNING "queue id not in range\n");
-        	return -EINVAL;
-    	}
+    printk(KERN_INFO "recv msg is called\n");
+    if (q_id < 0 || q_id >= MAX_QUEUE) {
+        printk(KERN_WARNING "queue id not in range\n");
+        return -EINVAL;
+    }
 
-    	struct msg_queue *queue_ptr = &queue[q_id];
+    struct msg_queue *queue_ptr = &queue[q_id];
+    spin_lock(&queue_ptr->lock); // Acquire the lock
 
-    	if (queue_ptr->count <= 0) {
-        	printk(KERN_WARNING "queue is empty\n");
-        	return -ENOMSG;
-    	}
+    if (queue_ptr->count <= 0) {
+        spin_unlock(&queue_ptr->lock); // Release the lock
+        printk(KERN_WARNING "queue is empty\n");
+        return -ENOMSG;
+    }
 
-    	// Ensure the provided msglen is enough to store the message
-    	if (msglen < RX_MSG_SIZE) {
-        	printk(KERN_WARNING "msglen is too small\n");
-        	return -EINVAL;
-    	}
+    if (msglen < RX_MSG_SIZE) {
+        spin_unlock(&queue_ptr->lock); // Release the lock
+        printk(KERN_WARNING "msglen is too small\n");
+        return -EINVAL;
+    }
 
-    	// Copy message from the queue to kernel space buffer
-    	strncpy(kernel_msg, queue_ptr->msg[queue_ptr->head], RX_MSG_SIZE);
-    	kernel_msg[RX_MSG_SIZE - 1] = '\0';  // Ensure null-termination
+    strncpy(kernel_msg, queue_ptr->msg[queue_ptr->head], RX_MSG_SIZE);
+    kernel_msg[RX_MSG_SIZE - 1] = '\0'; // Ensure null-termination
 
-    	// Copy message from kernel space to user space
-    	if (copy_to_user(rx_msg, kernel_msg, RX_MSG_SIZE)) {
-        	printk(KERN_WARNING "Failed to copy data to user space\n");
-        	return -EFAULT;
-    	}
+    if (copy_to_user(rx_msg, kernel_msg, RX_MSG_SIZE)) {
+        spin_unlock(&queue_ptr->lock); // Release the lock
+        printk(KERN_WARNING "Failed to copy data to user space\n");
+        return -EFAULT;
+    }
 
-    	// Update queue state
-    	queue_ptr->head = (queue_ptr->head + 1) % MAX_MSG;
-    	queue_ptr->count--;
+    queue_ptr->head = (queue_ptr->head + 1) % MAX_MSG;
+    queue_ptr->count--;
 
-    	return ret;
+    spin_unlock(&queue_ptr->lock); // Release the lock
+
+    return ret;
 }
 
-
 SYSCALL_DEFINE1(destroy_queue, int, q_id)
-//asmlinkage long __x64_sys_destroy_queue(int q_id)
 {
-	printk("destroy queue is called \n");
-	if (q_id < 0 || q_id >= MAX_QUEUE)
-                return -1;
+    printk("destroy queue is called\n");
+    if (q_id < 0 || q_id >= MAX_QUEUE)
+        return -1;
 
-        struct msg_queue *queue_ptr = &queue[q_id];
+    struct msg_queue *queue_ptr = &queue[q_id];
+    spin_lock(&queue_ptr->lock); // Acquire the lock
 
-        if (queue_ptr->count > 0)
-                return -4; //queue not empty, elements are there
+    if (queue_ptr->count > 0) {
+        spin_unlock(&queue_ptr->lock); // Release the lock
+        return -4; // Queue not empty, elements are there
+    }
 
-        queue_ptr->count = -1; //means destroyed
-        return 0;
+    queue_ptr->count = -1; // Mark as destroyed
+    spin_unlock(&queue_ptr->lock); // Release the lock
+
+    return 0;
 }
