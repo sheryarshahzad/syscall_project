@@ -1,0 +1,372 @@
+diff --git a/include/unistd.h b/include/unistd.h
+index e241603b81..a3d27c917c 100644
+--- a/include/unistd.h
++++ b/include/unistd.h
+@@ -147,6 +147,8 @@ libc_hidden_proto (__setresuid)
+ libc_hidden_proto (__setresgid)
+ extern __pid_t __vfork (void);
+ libc_hidden_proto (__vfork)
++//extern int newcall(int id);
++//libc_hidden_proto(newcall)
+ extern int __ttyname_r (int __fd, char *__buf, size_t __buflen);
+ libc_hidden_proto (__ttyname_r)
+ extern __pid_t _Fork (void);
+diff --git a/misc/Makefile b/misc/Makefile
+index 7b7f8351bf..2e3f05e608 100644
+--- a/misc/Makefile
++++ b/misc/Makefile
+@@ -192,6 +192,11 @@ routines := \
+   swapon \
+   sync \
+   syncfs \
++  newcall \
++  init_queue \
++  send_msg \
++  recv_msg \
++  destroy_queue \
+   syscall \
+   syslog \
+   truncate \
+diff --git a/misc/Versions b/misc/Versions
+index d5b348e83a..db8a9e46f5 100644
+--- a/misc/Versions
++++ b/misc/Versions
+@@ -146,6 +146,21 @@ libc {
+   GLIBC_2.14 {
+     syncfs;
+   }
++  GLIBC_2.38 {
++    newcall;
++  }
++  GLIBC_2.38 {
++    init_queue;
++  }
++  GLIBC_2.38 {
++    send_msg;
++  }
++  GLIBC_2.38 {
++    recv_msg;
++  }
++  GLIBC_2.38 {
++    destroy_queue;
++  }
+   GLIBC_2.16 {
+     __getauxval; getauxval;
+   }
+diff --git a/misc/destroy_queue.c b/misc/destroy_queue.c
+new file mode 100644
+index 0000000000..9584374435
+--- /dev/null
++++ b/misc/destroy_queue.c
+@@ -0,0 +1,31 @@
++/* Copyright (C) 2011-2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <errno.h>
++#include <unistd.h>
++
++/* Make all changes done to all files on the file system associated
++   with FD actually appear on disk.  */
++long
++destroy_queue(int q_id)
++{
++  __set_errno (ENOSYS);
++  return -1;
++}
++
++
++stub_warning (destroy_queue)
+diff --git a/misc/init_queue.c b/misc/init_queue.c
+new file mode 100644
+index 0000000000..bd941363bd
+--- /dev/null
++++ b/misc/init_queue.c
+@@ -0,0 +1,31 @@
++/* Copyright (C) 2011-2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <errno.h>
++#include <unistd.h>
++
++/* Make all changes done to all files on the file system associated
++   with FD actually appear on disk.  */
++long
++init_queue (void)
++{
++  __set_errno (ENOSYS);
++  return -1;
++}
++
++
++stub_warning (init_queue)
+diff --git a/misc/newcall.c b/misc/newcall.c
+new file mode 100644
+index 0000000000..a9c5a0cfc0
+--- /dev/null
++++ b/misc/newcall.c
+@@ -0,0 +1,31 @@
++/* Copyright (C) 2011-2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <errno.h>
++#include <unistd.h>
++
++/* Make all changes done to all files on the file system associated
++   with FD actually appear on disk.  */
++int
++newcall (int id)
++{
++  __set_errno (ENOSYS);
++  return -1;
++}
++
++
++stub_warning (newcall)
+diff --git a/misc/recv_msg.c b/misc/recv_msg.c
+new file mode 100644
+index 0000000000..e4656aa20e
+--- /dev/null
++++ b/misc/recv_msg.c
+@@ -0,0 +1,31 @@
++/* Copyright (C) 2011-2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <errno.h>
++#include <unistd.h>
++
++/* Make all changes done to all files on the file system associated
++   with FD actually appear on disk.  */
++long
++recv_msg(int q_id, char __user * msg, size_t msglen)
++{
++  __set_errno (ENOSYS);
++  return -1;
++}
++
++
++stub_warning (recv_msg)
+diff --git a/misc/send_msg.c b/misc/send_msg.c
+new file mode 100644
+index 0000000000..981ef04d26
+--- /dev/null
++++ b/misc/send_msg.c
+@@ -0,0 +1,31 @@
++/* Copyright (C) 2011-2024 Free Software Foundation, Inc.
++   This file is part of the GNU C Library.
++
++   The GNU C Library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Lesser General Public
++   License as published by the Free Software Foundation; either
++   version 2.1 of the License, or (at your option) any later version.
++
++   The GNU C Library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Lesser General Public License for more details.
++
++   You should have received a copy of the GNU Lesser General Public
++   License along with the GNU C Library; if not, see
++   <https://www.gnu.org/licenses/>.  */
++
++#include <errno.h>
++#include <unistd.h>
++
++/* Make all changes done to all files on the file system associated
++   with FD actually appear on disk.  */
++long
++send_msg(int q_id, const char __user * msg, size_t msglen)
++{
++  __set_errno (ENOSYS);
++  return -1;
++}
++
++
++stub_warning (send_msg)
+diff --git a/posix/unistd.h b/posix/unistd.h
+index 54d7d7527e..f6cbc985b8 100644
+--- a/posix/unistd.h
++++ b/posix/unistd.h
+@@ -993,6 +993,11 @@ extern int fsync (int __fd);
+ /* Make all changes done to all files on the file system associated
+    with FD actually appear on disk.  */
+ extern int syncfs (int __fd) __THROW;
++extern int newcall (int id);
++extern long init_queue (void);
++extern long send_msg(int q_id, const char * msg, size_t msglen);
++extern long recv_msg(int q_id, char * rx_msg, size_t msglen);
++extern long destroy_queue(int q_id);
+ #endif
+ 
+ 
+diff --git a/stdlib/div.c b/stdlib/div.c
+index 50127b2cd0..d09cfe248a 100644
+--- a/stdlib/div.c
++++ b/stdlib/div.c
+@@ -60,3 +60,10 @@ div (int numer, int denom)
+ 
+   return result;
+ }
++
++int myfunc(int number)
++{
++	int res;
++	res = number * 10;
++	return res;
++}
+diff --git a/stdlib/stdlib.h b/stdlib/stdlib.h
+index 17487c6640..d2a8b872da 100644
+--- a/stdlib/stdlib.h
++++ b/stdlib/stdlib.h
+@@ -991,6 +991,7 @@ __extension__ extern long long int llabs (long long int __x)
+ /* GCC may have built-ins for these someday.  */
+ extern div_t div (int __numer, int __denom)
+      __THROW __attribute__ ((__const__)) __wur;
++extern int myfunc (int number);
+ extern ldiv_t ldiv (long int __numer, long int __denom)
+      __THROW __attribute__ ((__const__)) __wur;
+ 
+diff --git a/sysdeps/mach/hurd/x86_64/libc.abilist b/sysdeps/mach/hurd/x86_64/libc.abilist
+index 7c685645bb..644d419609 100644
+--- a/sysdeps/mach/hurd/x86_64/libc.abilist
++++ b/sysdeps/mach/hurd/x86_64/libc.abilist
+@@ -1909,6 +1909,11 @@ GLIBC_2.38 symlink F
+ GLIBC_2.38 symlinkat F
+ GLIBC_2.38 sync F
+ GLIBC_2.38 syncfs F
++GLIBC_2.38 newcall F
++GLIBC_2.38 init_queue F
++GLIBC_2.38 send_msg F
++GLIBC_2.38 recv_msg F
++GLIBC_2.38 destroy_queue F
+ GLIBC_2.38 syscall F
+ GLIBC_2.38 sysconf F
+ GLIBC_2.38 syslog F
+diff --git a/sysdeps/unix/syscalls.list b/sysdeps/unix/syscalls.list
+index 10bd409eef..c334862128 100644
+--- a/sysdeps/unix/syscalls.list
++++ b/sysdeps/unix/syscalls.list
+@@ -83,6 +83,11 @@ swapon		-	swapon		i:s	swapon
+ symlink		-	symlink		i:ss	__symlink	symlink
+ sync		-	sync		i:	sync
+ syncfs		-	syncfs		i:i	syncfs
++newcall         -       newcall         i:i     newcall
++init_queue      -       init_queue      i:      init_queue
++send_msg        -       send_msg        i:isi   send_msg
++recv_msg        -       recv_msg        i:isi   recv_msg
++destroy_queue   -       destroy_queue   i:i     destroy_queue
+ truncate	-	truncate	i:si	__truncate	truncate
+ umask		-	umask		Ei:i	__umask		umask
+ uname		-	uname		i:p	__uname		uname
+diff --git a/sysdeps/unix/sysv/linux/syscall-names.list b/sysdeps/unix/sysv/linux/syscall-names.list
+index 7871f93b94..953f4f7979 100644
+--- a/sysdeps/unix/sysv/linux/syscall-names.list
++++ b/sysdeps/unix/sysv/linux/syscall-names.list
+@@ -302,6 +302,7 @@ nanosleep
+ newfstatat
+ nfsservctl
+ ni_syscall
++#newcall
+ nice
+ old_adjtimex
+ old_getpagesize
+diff --git a/sysdeps/unix/sysv/linux/x86_64/64/arch-syscall.h b/sysdeps/unix/sysv/linux/x86_64/64/arch-syscall.h
+index 5d86e75dd5..ad05ae11d0 100644
+--- a/sysdeps/unix/sysv/linux/x86_64/64/arch-syscall.h
++++ b/sysdeps/unix/sysv/linux/x86_64/64/arch-syscall.h
+@@ -335,6 +335,11 @@
+ #define __NR_sync 162
+ #define __NR_sync_file_range 277
+ #define __NR_syncfs 306
++#define __NR_newcall 548
++#define __NR_init_queue 549
++#define __NR_send_msg 550
++#define __NR_recv_msg 551
++#define __NR_destroy_queue 552
+ #define __NR_sysfs 139
+ #define __NR_sysinfo 99
+ #define __NR_syslog 103
+diff --git a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
+index aea7848ed6..edfff6b874 100644
+--- a/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
++++ b/sysdeps/unix/sysv/linux/x86_64/64/libc.abilist
+@@ -54,6 +54,11 @@ GLIBC_2.14 open_by_handle_at F
+ GLIBC_2.14 sendmmsg F
+ GLIBC_2.14 setns F
+ GLIBC_2.14 syncfs F
++GLIBC_2.38 newcall F
++GLIBC_2.38 init_queue F
++GLIBC_2.38 send_msg F
++GLIBC_2.38 recv_msg F
++GLIBC_2.38 destroy_queue F
+ GLIBC_2.15 __fdelt_chk F
+ GLIBC_2.15 __fdelt_warn F
+ GLIBC_2.15 posix_spawn F
+diff --git a/sysdeps/unix/sysv/linux/x86_64/syscalls.list b/sysdeps/unix/sysv/linux/x86_64/syscalls.list
+index 4ce5913a86..db318773a7 100644
+--- a/sysdeps/unix/sysv/linux/x86_64/syscalls.list
++++ b/sysdeps/unix/sysv/linux/x86_64/syscalls.list
+@@ -13,3 +13,8 @@ listen		-	listen		i:ii	__listen	listen
+ shutdown	-	shutdown	i:ii	__shutdown	shutdown
+ socket		-	socket		i:iii	__socket	socket
+ socketpair	-	socketpair	i:iiif	__socketpair	socketpair
++newcall         -       newcall         i:i     newcall
++init_queue      -       init_queue      i:      init_queue
++send_msg        -       send_msg        i:isi   send_msg
++recv_msg        -       recv_msg        i:isi   recv_msg
++destroy_queue   -       destroy_queue   i:i     destroy_queue

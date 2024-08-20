@@ -6,10 +6,11 @@
 #include <string.h>
 #include <errno.h>
 
+#define RX_MSG_SIZE      10
+
+#if 0
 #define __NR_recv_msg    551
 #define __NR_send_msg    550
-
-#define RX_MSG_SIZE      10
 
 long recv_msg(int q_id, char *msg, size_t msglen) {
     return syscall(__NR_recv_msg, q_id, msg, msglen);
@@ -18,6 +19,7 @@ long recv_msg(int q_id, char *msg, size_t msglen) {
 long send_msg(int q_id, const char *msg, size_t msglen) {
     return syscall(__NR_send_msg, q_id, msg, msglen);
 }
+#endif
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {

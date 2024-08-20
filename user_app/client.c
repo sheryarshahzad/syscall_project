@@ -7,14 +7,17 @@
 #include <errno.h>
 #include <sys/wait.h>
 
+#if 0
 #define __NR_init_queue  549
 #define __NR_send_msg    550
 #define __NR_recv_msg    551
 #define __NR_destroy_queue 552
+#endif
 
 #define MAX_MSG_SZ       256
 #define RX_MSG_SIZE      10
 
+#if 0
 long init_queue() {
     return syscall(__NR_init_queue);
 }
@@ -30,7 +33,7 @@ long recv_msg(int q_id, char *msg, size_t msglen) {
 long destroy_queue(int q_id) {
     return syscall(__NR_destroy_queue, q_id);
 }
-
+#endif
 int main() {
     char message[RX_MSG_SIZE] = {0};
     const char *init_message = "sheryar";
