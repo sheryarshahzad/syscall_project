@@ -68,7 +68,7 @@ int main() {
     if (pid == 0) { // Child process
         char queue_id_str[20];
         snprintf(queue_id_str, sizeof(queue_id_str), "%ld", queue_id);
-        execl("./server2", "server", queue_id_str, NULL);
+        execl("./server", "server", queue_id_str, NULL);
         perror("execl failed");
         exit(EXIT_FAILURE);
     } else { // Parent process

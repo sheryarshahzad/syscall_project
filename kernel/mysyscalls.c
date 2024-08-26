@@ -64,10 +64,13 @@ SYSCALL_DEFINE3(send_msg, int, q_id, const char __user *, msg, size_t, msglen) {
 
     spin_lock(&queue_ptr->lock);
 
-    if (queue_ptr->count >= MAX_MSG) {
-        printk(KERN_WARNING "queue is full\n");
-        ret = -ENOSPC;
-        goto out;
+    // Block the process if the queue is full
+    while (queue_ptr->count >= MAX_MSG) {
+        spin_unlock(&queue_ptr->lock);
+        if (wait_event_interruptible(queue_ptr->wait, queue_ptr->count < MAX_MSG)) {
+            return -ERESTARTSYS;
+        }
+        spin_lock(&queue_ptr->lock);
     }
 
     kernel_msg = kmalloc(msglen, GFP_KERNEL);
@@ -157,6 +160,9 @@ SYSCALL_DEFINE1(destroy_queue, int, q_id) {
     queue_ptr = &queue[q_id];
     
     spin_lock(&queue_ptr->lock);
+
+    // Wake up any processes waiting on this queue
+    wake_up_all(&queue_ptr->wait);
 
     printk("queue is destroyed\n");
     queue_ptr->count = -1; // means destroyed
